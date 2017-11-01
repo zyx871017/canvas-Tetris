@@ -1,0 +1,19 @@
+{
+  "name": "canvas-tetris",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zyx871017/canvas-Tetris.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zyx871017/canvas-Tetris/issues"
+  },
+  "homepage": "https://github.com/zyx871017/canvas-Tetris#readme"
+}
