@@ -1,6 +1,6 @@
 var CANVAS_WIDTH = document.body.clientWidth - 100;
 var CANVAS_HEIGHT = document.body.clientHeight - 100;
-var KEY_DIRECTION = 'up';
+var POINT = 0;
 var KEY_DOWN = false;
 var LAST_MOVE_TIME = new Date().getTime();
 var DOWN_TIME = 800;
@@ -43,25 +43,34 @@ function drawTetris(cxt, x, y, index) {
     }
 }
 
+function drawPoint(cxt, x, y) {
+    cxt.clearRect(x, y-100, 100, 100);
+    cxt.fillStyle = 'blue';
+    cxt.font = '40px sans-serif';
+    cxt.textAlign = 'left';
+    cxt.baseline = 'top';
+    cxt.fillText(POINT.toString(), x, y);
+
+}
+
 window.addEventListener('keydown', function (e) {
-    // 上
+
+    KEY_DOWN = true;
     switch (e.keyCode) {
         // 上
         case 38:
-            KEY_DIRECTION = 'up';
-            KEY_DOWN = true;
+            tetrisUp();
             break;
         case 40:
-            KEY_DIRECTION = 'down';
-            KEY_DOWN = true;
+            if (!tetrisToGround()) {
+                tetrisDown();
+            }
             break;
         case 37:
-            KEY_DIRECTION = 'left';
-            KEY_DOWN = true;
+            tetrisLeft();
             break;
         case 39:
-            KEY_DIRECTION = 'right';
-            KEY_DOWN = true;
+            tetrisRight();
             break;
         default:
             KEY_DOWN = false;
@@ -76,15 +85,22 @@ window.addEventListener('keyup', function () {
 setInterval(function () {
     drawMatrix(context, 300, 20, mixCurMatrix());
     drawTetris(context, 800, 400, nextTetrisIndex);
+    drawPoint(context, 800, 100);
 
     update();
 }, 100);
 
 function update() {
     var timeInterval = getInterval();
+    // 根据时间自动变换事件
+    if (KEY_DOWN && tetrisToGround()) {
+        LAST_MOVE_TIME = new Date().getTime();
+    }
+
     if (timeInterval >= DOWN_TIME) {
         if (tetrisToGround()) {
             CUR_MATRIX = mixCurMatrix();
+            getPoint();
             CUR_TETRIS = {
                 tetris: tetris[nextTetrisIndex],
                 top: 1 - tetris[nextTetrisIndex].length,
@@ -93,9 +109,45 @@ function update() {
             };
             nextTetrisIndex = Math.floor(Math.random() * tetris.length);
         } else {
-            LAST_MOVE_TIME = new Date().getTime();
             tetrisDown();
         }
+        LAST_MOVE_TIME = new Date().getTime();
+    }
+}
+
+function getPoint() {
+    var cutLine = 0;
+    for (var i = 19; i >= 0; i--) {
+        var filled = true;
+        for (var j = 0; j < CUR_MATRIX[i].length; j++) {
+            if (CUR_MATRIX[i][j] === 0) {
+                filled = false;
+                break;
+            }
+        }
+        if (filled) {
+            CUR_MATRIX.splice(i, 1);
+            cutLine++;
+        }
+    }
+    for (var k = CUR_MATRIX.length - 1; k < 19; k++) {
+        CUR_MATRIX.unshift([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    }
+    switch (cutLine) {
+        case 1:
+            POINT += 1;
+            break;
+        case 2:
+            POINT += 3;
+            break;
+        case 3:
+            POINT += 7;
+            break;
+        case 4:
+            POINT += 14;
+            break;
+        default:
+            break;
     }
 }
 
@@ -146,15 +198,35 @@ function tetrisDown() {
 }
 
 function tetrisLeft() {
-    if (CUR_TETRIS.left > 0) {
-        CUR_TETRIS.left--;
+    if (CUR_TETRIS.left <= 0) {
+        return;
     }
+    for (var i = CUR_TETRIS.top; i < CUR_TETRIS.top + CUR_TETRIS.tetris.length; i++) {
+        var ti = i - CUR_TETRIS.top;
+        for (var j = CUR_TETRIS.left; j < CUR_TETRIS.left + CUR_TETRIS.tetris[ti].length; j++) {
+            var tj = j - CUR_TETRIS.left;
+            if (CUR_TETRIS.tetris[ti][tj] === 1 && CUR_MATRIX[i][j - 1] === 1) {
+                return;
+            }
+        }
+    }
+    CUR_TETRIS.left--;
 }
 
 function tetrisRight() {
-    if (CUR_TETRIS.right < 9) {
-        CUR_TETRIS.left++;
+    if (CUR_TETRIS.left + CUR_TETRIS.tetris[0].length > 9) {
+        return;
     }
+    for (var i = CUR_TETRIS.top; i < CUR_TETRIS.top + CUR_TETRIS.tetris.length; i++) {
+        var ti = i - CUR_TETRIS.top;
+        for (var j = CUR_TETRIS.left; j < CUR_TETRIS.left + CUR_TETRIS.tetris[ti].length; j++) {
+            var tj = j - CUR_TETRIS.left;
+            if (CUR_TETRIS.tetris[ti][tj] === 1 && CUR_MATRIX[i][j + 1] === 1) {
+                return;
+            }
+        }
+    }
+    CUR_TETRIS.left++;
 }
 
 function getInterval() {
