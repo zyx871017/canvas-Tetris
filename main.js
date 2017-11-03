@@ -3,14 +3,13 @@ var CANVAS_HEIGHT = document.body.clientHeight - 100;
 var POINT = 0;
 var KEY_DOWN = false;
 var LAST_MOVE_TIME = new Date().getTime();
-var DOWN_TIME = 800;
+var DOWN_TIME = 700;
 var nextTetrisIndex = Math.floor(Math.random() * tetris.length);
 var newTetris = tetris[Math.floor(Math.random() * tetris.length)];
 var CUR_TETRIS = {
     tetris: newTetris,
     top: 1 - newTetris.length,
-    left: 3,
-    direct: 'up'
+    left: 3
 };
 var CUR_MATRIX = JSON.parse(JSON.stringify(matrix));
 
@@ -44,7 +43,7 @@ function drawTetris(cxt, x, y, index) {
 }
 
 function drawPoint(cxt, x, y) {
-    cxt.clearRect(x, y-100, 100, 100);
+    cxt.clearRect(x, y - 100, 100, 100);
     cxt.fillStyle = 'blue';
     cxt.font = '40px sans-serif';
     cxt.textAlign = 'left';
@@ -149,6 +148,7 @@ function getPoint() {
         default:
             break;
     }
+    DOWN_TIME = 700 - (Math.floor(POINT / 100) < 8 ? Math.floor(POINT / 100) * 50 : 400);
 }
 
 function mixCurMatrix() {
@@ -163,6 +163,36 @@ function mixCurMatrix() {
     return newMatrix;
 }
 
+function tetrisCanConvert(curTetris) {
+    var tetrisBottom = CUR_TETRIS.top + CUR_TETRIS.tetris.length - 1;
+    var newLeft = 20;
+    for (var k = CUR_TETRIS.left - 4 + CUR_TETRIS.tetris[0].length;
+         k < CUR_TETRIS.left + 4 - CUR_TETRIS.tetris[0].length;
+         k++) {
+        var canConvert = true;
+        for (var i = 0; i < curTetris.length; i++) {
+            for (var j = 0; j < curTetris[i].length; j++) {
+                var mi = tetrisBottom - curTetris.length + 1 + i;
+                var mj = k + j;
+                if (curTetris[i][j] === 1 && CUR_MATRIX[mi][mj] === 1) {
+                    canConvert = false;
+                }
+            }
+        }
+        if (canConvert) {
+            if (Math.abs(k - CUR_TETRIS.left) < newLeft) {
+                newLeft = k;
+            }
+        }
+    }
+    console.log(newLeft);
+    if (newLeft < 20) {
+        CUR_TETRIS.left = newLeft;
+        return true;
+    }
+    return false;
+}
+
 function tetrisUp() {
     var curTetris = [];
     var lastTetris = CUR_TETRIS.tetris;
@@ -174,7 +204,9 @@ function tetrisUp() {
             curTetris[lastTetris[i].length - 1 - j][i] = lastTetris[i][j];
         }
     }
-    CUR_TETRIS.tetris = curTetris;
+    if (tetrisCanConvert(curTetris)) {
+        CUR_TETRIS.tetris = curTetris;
+    }
 }
 
 function tetrisToGround() {
